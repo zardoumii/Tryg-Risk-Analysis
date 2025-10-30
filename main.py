@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 # load data
-df = pd.read_csv(r"C:\Users\laura\Documents\University\3rd semester\Machine Learning\Final Project\Project_description_and_data\claims_train.csv")
+df = pd.read_csv(r"path\claims_train.csv")
 print(df.info())
 print(df.head())
 
