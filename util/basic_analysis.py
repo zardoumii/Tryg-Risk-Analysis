@@ -44,17 +44,14 @@ def analyze_features(df):
     """Analyze categorical and numerical features"""
 
     categorical_cols = ['Area', 'VehBrand', 'VehGas', 'Region']
-    
-    print("\n🏷️  CATEGORICAL FEATURES:")
+
     for col in categorical_cols:
-        if col in df.columns:  # ✅ Only analyze columns that exist
+        if col in df.columns:  
             print(f"\n{col} - Unique values: {df[col].nunique()}")
             print(df[col].value_counts().head())
         else:
             print(f"\n{col} - Column not found in dataset (skipped)")
     
-    print("\n📊 NUMERICAL FEATURES:")
-
     numerical_cols = ['ClaimNb', 'Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
 
     fig, axes = plt.subplots(3, 3, figsize=(15, 12))
