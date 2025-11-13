@@ -21,7 +21,7 @@ class PCAAnalysis:
         self.feature_names = None
         
 
-        #when combining to advanced analysis-delete loading part since we have t already 
+        #when combining to advanced analysis-delete loading part since we have it already 
     def load_and_prepare(self):
         self.df = pd.read_csv(self.data_path)
         
@@ -102,25 +102,32 @@ class PCAAnalysis:
         plt.close()
         return self
     
-    def plot_2d(self, output_dir="visualizations"):
-        os.makedirs(output_dir, exist_ok=True)
-        
-        fig, ax = plt.subplots(figsize=(10, 8))
-        scatter = ax.scatter(self.X_pca[:, 0], self.X_pca[:, 1], 
-                            alpha=0.6, c=range(len(self.X_pca)), cmap='viridis', s=50)
-        
-        ax.set_xlabel(f'PC1 ({self.pca.explained_variance_ratio_[0]*100:.2f}%)')
-        ax.set_ylabel(f'PC2 ({self.pca.explained_variance_ratio_[1]*100:.2f}%)')
-        ax.set_title('Data in PC1-PC2 Space')
-        ax.grid(alpha=0.3)
-        plt.colorbar(scatter, ax=ax, label='Sample Index')
-        plt.tight_layout()
-        
-        output_path = os.path.join(output_dir, 'pca_2d.png')
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        print(f"Saved 2D plot to: {output_path}")
-        plt.close()
-        return self
+    # Optional: 2D PCA scatter 
+    # Keeping the original 2D plotting code here as commented lines so it can
+    # be re-enabled manually if you want the PC1-PC2 scatter later.
+    # def plot_2d(self, output_dir="visualizations"):
+    #     os.makedirs(output_dir, exist_ok=True)
+    #     
+    #     fig, ax = plt.subplots(figsize=(10, 8))
+    #     scatter = ax.scatter(self.X_pca[:, 0], self.X_pca[:, 1], 
+    #                         alpha=0.6, c=range(len(self.X_pca)), cmap='viridis', s=50)
+    #     
+    #     ax.set_xlabel(f'PC1 ({self.pca.explained_variance_ratio_[0]*100:.2f}%)')
+    #     ax.set_ylabel(f'PC2 ({self.pca.explained_variance_ratio_[1]*100:.2f}%)')
+    #     ax.set_title('Data in PC1-PC2 Space')
+    #     ax.grid(alpha=0.3)
+    #     plt.colorbar(scatter, ax=ax, label='Sample Index')
+    #     plt.tight_layout()
+    #     
+    #     output_path = os.path.join(output_dir, 'pca_2d.png')
+    #     plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    #     print(f"Saved 2D plot to: {output_path}")
+    #     plt.close()
+    #     return self
+    
+    # The active 2D plotting method has been intentionally removed from
+    # automatic execution. The commented block above contains the original
+    # implementation; re-enable it there if you want to run the PC1-PC2 scatter.
     
     def plot_loadings(self, output_dir="visualizations", top_n=10):
         os.makedirs(output_dir, exist_ok=True)
@@ -181,7 +188,10 @@ class PCAAnalysis:
         self.standardize()
         self.fit()
         self.plot_variance(output_dir)
-        self.plot_2d(output_dir)
+        
+        # Optional 2D PCA scatter is available above as commented code; enable
+        # it manually if you want to generate the PC1-PC2 scatter.
+        # self.plot_2d(output_dir)
         self.plot_loadings(output_dir)
         self.save_pca_data()
         
