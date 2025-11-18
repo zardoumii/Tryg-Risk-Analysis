@@ -26,7 +26,7 @@ def assess_data(df):
             if df[col].isnull().sum() > 0:
                 median_val = df[col].median()
                 df[col].fillna(median_val, inplace=True)
-                print(f"  → Fixed {col} missing values with median: {median_val}")
+                print(f"  Fixed {col} missing values with median: {median_val}")
         
         categorical_cols = df.select_dtypes(include=['object']).columns
         for col in categorical_cols:
@@ -34,7 +34,7 @@ def assess_data(df):
                 mode_series = df[col].mode()
                 mode_val = mode_series[0] if len(mode_series) > 0 else 'Unknown'
                 df[col].fillna(mode_val, inplace=True)
-                print(f"  → Fixed {col} missing values with mode: {mode_val}")
+                print(f"  Fixed {col} missing values with mode: {mode_val}")
     else:
         print("No missing values")
 
@@ -55,17 +55,17 @@ def assess_data(df):
         if col == 'Exposure' and (min_val <= 0 or max_val > 1):
             print(f"  {col} values outside expected range [0,1]")
             df[col] = df[col].clip(0.001, 1.0)
-            print(f"  → Fixed: Capped {col} to [0.001, 1.0]")
+            print(f"  Fixed: Capped {col} to [0.001, 1.0]")
             
         if col == 'ClaimNb' and min_val < 0:
             print(f"  {col} has negative values")
             df[col] = df[col].clip(lower=0)
-            print(f"  → Fixed: Set negative {col} to 0")
+            print(f"  Fixed: Set negative {col} to 0")
             
         if col in ['VehAge', 'DrivAge'] and min_val < 0:
             print(f"  {col} has negative values")
             df[col] = df[col].abs()
-            print(f"  → Fixed: Converted negative {col} to absolute values")
+            print(f"  Fixed: Converted negative {col} to absolute values")
 
 def analyze_features(df):
     """Analyze categorical and numerical features"""
@@ -99,7 +99,7 @@ def analyze_features(df):
     plt.show()
 
 def detect_outliers(df):
-    """Detect and handle extreme outliers"""
+    """Detect outliers"""
     numerical_cols = ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
     
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -118,17 +118,6 @@ def detect_outliers(df):
         
         outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
         print(f"{col}: {len(outliers)} outliers ({len(outliers)/len(df)*100:.2f}%)")
-        
-        # Cap extreme outliers beyond 5 standard deviations
-        mean_val = df[col].mean()
-        std_val = df[col].std()
-        extreme_lower = mean_val - 5 * std_val
-        extreme_upper = mean_val + 5 * std_val
-        
-        extreme_outliers = df[(df[col] < extreme_lower) | (df[col] > extreme_upper)]
-        if len(extreme_outliers) > 0:
-            df[col] = df[col].clip(extreme_lower, extreme_upper)
-            print(f"  → Capped {len(extreme_outliers)} extreme outliers in {col}")
  
         if col == 'Exposure':
             exposure_issues = df[(df[col] <= 0) | (df[col] > 1)]
@@ -159,7 +148,7 @@ if __name__ == "__main__":
     
     try:
         dataset = run_complete_analysis(file_path)
-        print(f"SUCCESS! Dataset loaded with shape: {dataset.shape}")
+        print(f"Dataset loaded with shape: {dataset.shape}")
         
     except FileNotFoundError:
         print(f" Error: File '{file_path}' not found!")
