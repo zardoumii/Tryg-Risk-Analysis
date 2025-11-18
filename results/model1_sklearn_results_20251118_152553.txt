@@ -1,0 +1,92 @@
+======================================================================
+Decision Tree Regressor - Reference Implementation (scikit-learn)
+======================================================================
+
+Timestamp: 2025-11-18 15:25:53
+
+Dataset Information:
+  Training samples: 542410
+  Test samples: 135603
+  Features: 10
+  Feature names: ['Exposure', 'Area', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'VehBrand', 'VehGas', 'Density', 'Region']
+  Categorical features: ['Area', 'VehBrand', 'VehGas', 'Region']
+  Numerical features: ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
+
+Target Variable: Claim Frequency (ClaimNb / Exposure)
+  Training target range: [0.0000, 732.0000]
+  Training target mean: 0.2612
+  Non-zero claims: 27211 (5.02%)
+
+Model Hyperparameters:
+  max_depth: 8
+  min_samples_split: 50
+  min_samples_leaf: 20
+  random_state: 42
+
+======================================================================
+Training Set Results:
+  MSE:  17.336811
+  RMSE: 4.163750
+  MAE:  0.479600
+  R²:   0.115839
+
+Test Set Results:
+  MSE:  23.767371
+  RMSE: 4.875179
+  MAE:  0.495779
+  R²:   0.122558
+
+======================================================================
+Feature Importances:
+======================================================================
+   feature  importance
+  Exposure    0.300016
+    VehAge    0.230780
+    VehGas    0.192360
+  VehBrand    0.113768
+   Density    0.045964
+    Region    0.034790
+  VehPower    0.032003
+   DrivAge    0.027823
+BonusMalus    0.022496
+      Area    0.000000
+
+======================================================================
+Sample Predictions (first 20 test samples):
+======================================================================
+Index    Actual       Predicted    Error       
+------------------------------------------------
+0        0.0000       0.0620       0.0620      
+1        0.0000       0.1577       0.1577      
+2        0.0000       0.3132       0.3132      
+3        0.0000       0.4941       0.4941      
+4        0.0000       0.2368       0.2368      
+5        0.0000       0.0620       0.0620      
+6        0.0000       0.3073       0.3073      
+7        0.0000       0.0955       0.0955      
+8        0.0000       0.0955       0.0955      
+9        0.0000       0.4216       0.4216      
+10       0.0000       0.0620       0.0620      
+11       0.0000       0.4941       0.4941      
+12       0.0000       0.1525       0.1525      
+13       0.0000       2.6351       2.6351      
+14       0.0000       0.3398       0.3398      
+15       0.0000       0.0620       0.0620      
+16       0.0000       0.3533       0.3533      
+17       0.0000       0.0620       0.0620      
+18       0.0000       0.3611       0.3611      
+19       0.0000       0.0620       0.0620      
+
+======================================================================
+Summary Statistics:
+======================================================================
+Training predictions - Mean: 0.2612, Std: 1.5071
+Test predictions - Mean: 0.2659, Std: 1.6784
+Training actuals - Mean: 0.2612, Std: 4.4281
+Test actuals - Mean: 0.2751, Std: 5.2045
+
+======================================================================
+Model Tree Structure:
+======================================================================
+Number of leaves: 111
+Tree depth: 8
