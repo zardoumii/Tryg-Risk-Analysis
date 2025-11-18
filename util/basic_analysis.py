@@ -14,17 +14,36 @@ def load_data(file_path):
     return df
 
 def assess_data(df):
-    """Check for missing values, duplicates, and data quality issues"""
+    """Check and fix missing values, duplicates, and data quality issues"""
     
     missing_vals = df.isnull().sum()
     if missing_vals.sum() > 0:
         print("Missing values per column:")
         print(missing_vals[missing_vals > 0])
+        
+        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        for col in numerical_cols:
+            if df[col].isnull().sum() > 0:
+                median_val = df[col].median()
+                df[col].fillna(median_val, inplace=True)
+                print(f"  → Fixed {col} missing values with median: {median_val}")
+        
+        categorical_cols = df.select_dtypes(include=['object']).columns
+        for col in categorical_cols:
+            if df[col].isnull().sum() > 0:
+                mode_series = df[col].mode()
+                mode_val = mode_series[0] if len(mode_series) > 0 else 'Unknown'
+                df[col].fillna(mode_val, inplace=True)
+                print(f"  → Fixed {col} missing values with mode: {mode_val}")
     else:
         print("No missing values")
 
     duplicates = df.duplicated().sum()
-    print(f"Duplicate rows: {duplicates}")
+    if duplicates > 0:
+        df.drop_duplicates(inplace=True)
+        print(f"Duplicate rows: {duplicates} → Removed")
+    else:
+        print(f"Duplicate rows: {duplicates}")
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     
@@ -34,11 +53,19 @@ def assess_data(df):
         print(f"{col}: min={min_val}, max={max_val}")
         
         if col == 'Exposure' and (min_val <= 0 or max_val > 1):
-            print(f"{col} values outside expected range [0,1]")
+            print(f"  {col} values outside expected range [0,1]")
+            df[col] = df[col].clip(0.001, 1.0)
+            print(f"  → Fixed: Capped {col} to [0.001, 1.0]")
+            
         if col == 'ClaimNb' and min_val < 0:
-            print(f"{col} has negative values")
+            print(f"  {col} has negative values")
+            df[col] = df[col].clip(lower=0)
+            print(f"  → Fixed: Set negative {col} to 0")
+            
         if col in ['VehAge', 'DrivAge'] and min_val < 0:
-            print(f"{col} has negative values")
+            print(f"  {col} has negative values")
+            df[col] = df[col].abs()
+            print(f"  → Fixed: Converted negative {col} to absolute values")
 
 def analyze_features(df):
     """Analyze categorical and numerical features"""
@@ -72,7 +99,7 @@ def analyze_features(df):
     plt.show()
 
 def detect_outliers(df):
-    """Detect and visualize outliers"""
+    """Detect and handle extreme outliers"""
     numerical_cols = ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
     
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -91,6 +118,17 @@ def detect_outliers(df):
         
         outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
         print(f"{col}: {len(outliers)} outliers ({len(outliers)/len(df)*100:.2f}%)")
+        
+        # Cap extreme outliers beyond 5 standard deviations
+        mean_val = df[col].mean()
+        std_val = df[col].std()
+        extreme_lower = mean_val - 5 * std_val
+        extreme_upper = mean_val + 5 * std_val
+        
+        extreme_outliers = df[(df[col] < extreme_lower) | (df[col] > extreme_upper)]
+        if len(extreme_outliers) > 0:
+            df[col] = df[col].clip(extreme_lower, extreme_upper)
+            print(f"  → Capped {len(extreme_outliers)} extreme outliers in {col}")
  
         if col == 'Exposure':
             exposure_issues = df[(df[col] <= 0) | (df[col] > 1)]
@@ -102,10 +140,16 @@ def detect_outliers(df):
 
 def run_complete_analysis(file_path):
     df = load_data(file_path)
-    assess_data(df)
+    
+    assess_data(df)  
     analyze_features(df)
-    detect_outliers(df)
-
+    detect_outliers(df)  
+    
+    output_path = file_path.replace('.csv', '_cleaned.csv')
+    df.to_csv(output_path, index=False)
+    print(f"Cleaned dataset saved to: {output_path}")
+    print(f"Final shape: {df.shape}")
+    
     return df
 
 if __name__ == "__main__":
