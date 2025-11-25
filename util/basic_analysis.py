@@ -1,6 +1,13 @@
 import pandas as pd         
 import numpy as np          
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+import os
+import sys
+
+def dual_print(text="", file=None):
+    print(text)  
+    if file:
+        file.write(str(text) + "\n")  
 
 def load_data(file_path):
     """Load and explore the dataset"""
@@ -95,7 +102,7 @@ def analyze_features(df):
         fig.delaxes(axes[i])
 
     plt.tight_layout()
-    plt.savefig('feature_distributions.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join('..', 'results', 'feature_distributions.png'), dpi=300, bbox_inches='tight')
     plt.show()
 
 def detect_outliers(df):
@@ -124,34 +131,43 @@ def detect_outliers(df):
             print(f"  Exposure outside [0,1]: {len(exposure_issues)} records")
     
     plt.tight_layout()
-    plt.savefig('outlier_analysis.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join('..', 'results', 'outlier_analysis.png'), dpi=300, bbox_inches='tight')
     plt.show()
 
 def run_complete_analysis(file_path):
-    df = load_data(file_path)
+    results_dir = os.path.join('..', 'results')
+    os.makedirs(results_dir, exist_ok=True)
     
-    assess_data(df)  
-    analyze_features(df)
-    detect_outliers(df)  
-    
-    output_path = file_path.replace('.csv', '_cleaned.csv')
-    df.to_csv(output_path, index=False)
-    print(f"Cleaned dataset saved to: {output_path}")
-    print(f"Final shape: {df.shape}")
-    
+    with open(os.path.join(results_dir, 'basic_analysis_results.txt'), 'w') as f:
+        sys.stdout = f
+        
+        print("BASIC DATA ANALYSIS RESULTS")
+        print("="*50)
+        
+        df = load_data(file_path)
+        assess_data(df)  
+        analyze_features(df)
+        detect_outliers(df)  
+        
+        output_path = file_path.replace('.csv', '_cleaned.csv')
+        df.to_csv(output_path, index=False)
+        print(f"Cleaned dataset saved to: {output_path}")
+        print(f"Final shape: {df.shape}")
+        
+        sys.stdout = sys.__stdout__  
+    print(f"Complete results saved to: {os.path.abspath(results_dir)}/basic_analysis_results.txt")
+    print(f"Plots saved to: {os.path.abspath(results_dir)}/ folder")
     return df
 
 if __name__ == "__main__":
     file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train.csv"
-    
-    print(f"Looking for data file: {file_path}")
     
     try:
         dataset = run_complete_analysis(file_path)
         print(f"Dataset loaded with shape: {dataset.shape}")
         
     except FileNotFoundError:
-        print(f" Error: File '{file_path}' not found!")
+        print(f"Error: File '{file_path}' not found!")
  
     except Exception as e:
         print(f"Error: {e}")
