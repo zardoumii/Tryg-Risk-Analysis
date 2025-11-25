@@ -1,0 +1,95 @@
+BASIC DATA ANALYSIS RESULTS
+==================================================
+Dataset shape: (542410, 12)
+Total records: 542,410
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 542410 entries, 0 to 542409
+Data columns (total 12 columns):
+ #   Column      Non-Null Count   Dtype  
+---  ------      --------------   -----  
+ 0   IDpol       542410 non-null  float64
+ 1   ClaimNb     542410 non-null  int64  
+ 2   Exposure    542410 non-null  float64
+ 3   Area        542410 non-null  object 
+ 4   VehPower    542410 non-null  int64  
+ 5   VehAge      542410 non-null  int64  
+ 6   DrivAge     542410 non-null  int64  
+ 7   BonusMalus  542410 non-null  int64  
+ 8   VehBrand    542410 non-null  object 
+ 9   VehGas      542410 non-null  object 
+ 10  Density     542410 non-null  int64  
+ 11  Region      542410 non-null  object 
+dtypes: float64(2), int64(6), object(4)
+memory usage: 49.7+ MB
+None
+       IDpol  ClaimNb  Exposure Area  VehPower  VehAge  DrivAge  BonusMalus VehBrand   VehGas  Density Region
+0  2122523.0        0      0.43    D         7      18       36          95       B1  Regular     1054    R24
+1  3173420.0        0      0.10    D         7      17       80          95       B2  Regular      598    R25
+2  1188619.0        0      0.33    E         7       3       36          76       B6  Regular     4172    R82
+3    31400.0        0      0.56    A         5       4       73          52      B13   Diesel       15    R24
+4  3138755.0        0      0.27    E         8       0       37          50      B11   Diesel     3021    R53
+              IDpol        ClaimNb       Exposure  ...        DrivAge     BonusMalus        Density
+count  5.424100e+05  542410.000000  542410.000000  ...  542410.000000  542410.000000  542410.000000
+mean   2.623260e+06       0.053122       0.528840  ...      45.503164      59.761546    1796.176180
+std    1.641809e+06       0.238785       0.364463  ...      14.135435      15.639321    3965.475251
+min    1.000000e+00       0.000000       0.002732  ...      18.000000      50.000000       1.000000
+25%    1.158401e+06       0.000000       0.180000  ...      34.000000      50.000000      92.000000
+50%    2.272434e+06       0.000000       0.490000  ...      44.000000      50.000000     393.000000
+75%    4.046606e+06       0.000000       0.990000  ...      55.000000      64.000000    1662.000000
+max    6.114330e+06      11.000000       2.010000  ...     100.000000     230.000000   27000.000000
+
+[8 rows x 8 columns]
+No missing values
+Duplicate rows: 0
+IDpol: min=1.0, max=6114330.0
+ClaimNb: min=0, max=11
+Exposure: min=0.00273224, max=2.01
+  Exposure values outside expected range [0,1]
+  Fixed: Capped Exposure to [0.001, 1.0]
+VehPower: min=4, max=15
+VehAge: min=0, max=100
+DrivAge: min=18, max=100
+BonusMalus: min=50, max=230
+Density: min=1, max=27000
+
+Area - Unique values: 6
+Area
+C    153287
+D    121235
+E    109911
+A     83150
+B     60423
+Name: count, dtype: int64
+
+VehBrand - Unique values: 11
+VehBrand
+B12    132831
+B1     130256
+B2     127821
+B3      42682
+B5      27850
+Name: count, dtype: int64
+
+VehGas - Unique values: 2
+VehGas
+Regular    276723
+Diesel     265687
+Name: count, dtype: int64
+
+Region - Unique values: 22
+Region
+R24    128502
+R82     67772
+R93     63517
+R11     55984
+R53     33643
+Name: count, dtype: int64
+Exposure: 0 outliers (0.00%)
+  Exposure outside [0,1]: 0 records
+VehPower: 27978 outliers (5.16%)
+VehAge: 2460 outliers (0.45%)
+DrivAge: 1034 outliers (0.19%)
+BonusMalus: 49914 outliers (9.20%)
+Density: 62184 outliers (11.46%)
+Cleaned dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned.csv
+Final shape: (542410, 12)
