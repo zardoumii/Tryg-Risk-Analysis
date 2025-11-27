@@ -31,7 +31,9 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
     plt.tight_layout()
     
     if save_plot:
-        filename = f'correlation_matrix_{method}.png'
+        results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
+        os.makedirs(results_dir, exist_ok=True)
+        filename = os.path.join(results_dir, f'correlation_matrix_{method}.png')
         plt.savefig(filename, dpi=300, bbox_inches='tight')
     
     plt.show()
@@ -98,7 +100,9 @@ def _plot_distributions(target, target_col, output_dir):
     axes[1].set_title(f'Log-Transformed Distribution of {target_col}')
     
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'{target_col}_distributions.png'), dpi=300, bbox_inches='tight')
+    results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
+    os.makedirs(results_dir, exist_ok=True)
+    plt.savefig(os.path.join(results_dir, f'{target_col}_distributions.png'), dpi=300, bbox_inches='tight')
     plt.show()
 
 def _analyze_risk_factors(df, target_col):
@@ -230,6 +234,43 @@ def log_transformation(features_data):
     
     return features_transformed
 
+def plot_scaled_feature_distributions_and_outliers(df, feature_names, results_dir):
+
+    n_features = len(feature_names)
+    n_cols = 3
+    n_rows = int(np.ceil(n_features / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows))
+    axes = axes.ravel()
+    for i, col in enumerate(feature_names):
+        axes[i].hist(df[col], bins=40, alpha=0.7, color='steelblue')
+        axes[i].set_title(f'Distribution of {col}')
+        axes[i].set_xlabel(col)
+        axes[i].set_ylabel('Frequency')
+    for i in range(n_features, len(axes)):
+        fig.delaxes(axes[i])
+    plt.tight_layout()
+    dist_path = os.path.join(results_dir, 'scaled_feature_distributions.png')
+    plt.savefig(dist_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Saved scaled feature distributions to: {dist_path}")
+
+    target_vars = ['ClaimFrequency', 'ClaimNb']
+    outlier_features = [col for col in feature_names if col not in target_vars]
+    n_outlier_features = len(outlier_features)
+    n_rows_out = int(np.ceil(n_outlier_features / n_cols))
+    fig, axes = plt.subplots(n_rows_out, n_cols, figsize=(5 * n_cols, 4 * n_rows))
+    axes = axes.ravel()
+    for i, col in enumerate(outlier_features):
+        axes[i].boxplot(df[col], vert=True)
+        axes[i].set_title(f'Boxplot of {col}')
+        axes[i].set_ylabel(col)
+    for i in range(n_outlier_features, len(axes)):
+        fig.delaxes(axes[i])
+    plt.tight_layout()
+    box_path = os.path.join(results_dir, 'scaled_feature_outliers.png')
+    plt.savefig(box_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Saved scaled feature outlier boxplots to: {box_path}")
 
 def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     import sys
@@ -276,6 +317,9 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
         processed_file = file_path.replace('.csv', '_final.csv')
         scaling_results['scaled_data'].to_csv(processed_file, index=False)
         print(f"The dataset saved to: {processed_file}")
+        results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
+        os.makedirs(results_dir, exist_ok=True)
+        plot_scaled_feature_distributions_and_outliers(scaling_results['scaled_data'], scaling_results['feature_names'], results_dir)
     
     return {
         'cleaned_data': df_cleaned,
@@ -290,5 +334,14 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     }
 
 if __name__ == "__main__":
-    complete_results = run_complete_pipeline()
-    print("Analysis completed successfully!")
+    import sys
+    results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
+    os.makedirs(results_dir, exist_ok=True)
+    output_txt = os.path.join(results_dir, 'advanced_analysis_output.txt')
+    with open(output_txt, 'w') as f:
+        sys.stdout = f
+        complete_results = run_complete_pipeline()
+        print("Analysis completed successfully!")
+    sys.stdout = sys.__stdout__
+    print(f"Analysis completed successfully! Output saved to {output_txt}")
+
