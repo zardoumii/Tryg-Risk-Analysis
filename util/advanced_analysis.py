@@ -1,16 +1,13 @@
 import pandas as pd
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')  # Set non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 import os
 import warnings
 warnings.filterwarnings('ignore')
 
 def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
-    """Analyze correlations with clean visualization"""
     numerical_data = df.select_dtypes(include=[np.number])
     
     if method == 'spearman':
@@ -37,13 +34,13 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
         filename = f'correlation_matrix_{method}.png'
         plt.savefig(filename, dpi=300, bbox_inches='tight')
     
-    plt.close()  # Close instead of show for non-interactive
+    plt.show()
     return correlation_matrix
 
 def analyze_target(df, target_col='ClaimFrequency', output_dir=None):
-    """Target analysis for insurance claims"""
     if output_dir is None:
-        output_dir = r"C:\Users\walde\OneDrive - ITU\Documents\Machine learning"
+        output_dir = os.path.dirname(os.path.abspath(__file__))
+    
     os.makedirs(output_dir, exist_ok=True)
 
     df = _create_target_variable(df, target_col)
@@ -62,7 +59,6 @@ def analyze_target(df, target_col='ClaimFrequency', output_dir=None):
     return True, df
 
 def _create_target_variable(df, target_col):
-    """Create ClaimFrequency if it doesn't exist"""
     if target_col == 'ClaimFrequency' and 'ClaimFrequency' not in df.columns:
         if 'ClaimNb' in df.columns and 'Exposure' in df.columns:
             df = df.copy()
@@ -95,15 +91,15 @@ def _plot_distributions(target, target_col, output_dir):
     """Create distribution plots"""
     fig, axes = plt.subplots(1, 2, figsize=(15, 5))
     
-    sns.histplot(target, bins=50, kde=True, color='steelblue', ax=axes[0])
-    axes[0].set_title(f'Distribution of {target_col}')
+    sns.histplot(target, bins=20, kde=True, color='steelblue', ax=axes[0])
+    axes[0].set_title('Distribution of ClaimFrequency')
     
-    sns.histplot(np.log1p(target), bins=50, kde=True, color='coral', ax=axes[1])
+    sns.histplot(np.log1p(target), bins=15, kde=True, color='coral', ax=axes[1])
     axes[1].set_title(f'Log-Transformed Distribution of {target_col}')
     
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'{target_col}_distributions.png'), dpi=300, bbox_inches='tight')
-    plt.close()  # Close instead of show
+    plt.show()
 
 def _analyze_risk_factors(df, target_col):
     """Analyze numerical risk factors"""
@@ -152,36 +148,37 @@ def scale_features(df, exclude_cols=None):
         exclude_cols = ['IDpol', 'ClaimNb']  
     
     df_processed = df.copy()
+    numeric_cols = df_processed.select_dtypes(include=[np.number]).columns.tolist()
+    features_to_transform = [col for col in numeric_cols if col not in exclude_cols]
     
-    # Only select numeric columns for scaling
+    if features_to_transform:
+        features_data = df_processed[features_to_transform].copy()
+        features_transformed = log_transformation(features_data)
+        for col in features_to_transform:
+            df_processed[col] = features_transformed[col]
+        print(f"Applied log transformation to: {features_to_transform}")
+    
+    df_processed = encode_categorical_features(df_processed, exclude_cols)
+    
     numeric_cols = df_processed.select_dtypes(include=[np.number]).columns.tolist()
     features_to_scale = [col for col in numeric_cols if col not in exclude_cols]
     
     if not features_to_scale:
         return None
-
-    features_data = df_processed[features_to_scale].copy()
-
-    features_transformed = log_transformation(features_data)
+    
+    print(f"Scaling {len(features_to_scale)} features")
     
     scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features_transformed)
+    scaled_features = scaler.fit_transform(df_processed[features_to_scale])
+    df_scaled = df_processed.copy()  
 
-    df_scaled = pd.DataFrame(
-        scaled_features, 
-        columns=features_to_scale, 
-        index=df_processed.index
-    )
+    for i, col in enumerate(features_to_scale):
+        df_scaled[col] = scaled_features[:, i]
     
-    # Add back excluded columns AND categorical columns
-    for col in exclude_cols:
-        if col in df_processed.columns:
-            df_scaled[col] = df_processed[col]
-    
-    # Add back categorical columns (strings)
-    categorical_cols = df_processed.select_dtypes(exclude=[np.number]).columns.tolist()
-    for col in categorical_cols:
-        df_scaled[col] = df_processed[col]
+    onehot_count = len([col for col in df_scaled.columns if '_' in col and 
+                       any(col.startswith(prefix) for prefix in ['Area_', 'VehBrand_', 'VehGas_', 'Region_'])])
+    print(f"  - {onehot_count} one-hot encoded features")
+    print(f"  - {len([col for col in exclude_cols if col in df_scaled.columns])} excluded features")
     
     return {
         'scaled_data': df_scaled,
@@ -193,23 +190,33 @@ def scale_features(df, exclude_cols=None):
     }
 
 def encode_categorical_features(df, exclude_cols):
-    categorical_cols = df.select_dtypes(include=['object']).columns
+    """One-hot encode categorical features"""
+    categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
     categorical_cols = [col for col in categorical_cols if col not in exclude_cols]
     
     if not categorical_cols:
+        print("No categorical features found to encode")
         return df
     
+    print(f"Encoding categorical features: {categorical_cols}")
+    
+    df_encoded = df.copy()
     total_categories = 0
+    
     for col in categorical_cols:
         n_categories = df[col].nunique()
         total_categories += n_categories
+        print(f"  {col}: {n_categories} categories -> {n_categories} binary features")
+        
         onehot_df = pd.get_dummies(df[col], prefix=col, drop_first=False)
-        df = pd.concat([df, onehot_df], axis=1)
+        df_encoded = pd.concat([df_encoded, onehot_df], axis=1)
     
-    df = df.drop(columns=categorical_cols)
+    df_encoded = df_encoded.drop(columns=categorical_cols)
     
-    print(f"Encoded {len(categorical_cols)} categorical → {total_categories} binary features")
-    return df
+    print(f"Encoded {len(categorical_cols)} categorical features -> {total_categories} binary features")
+    print(f"Dataset shape: {df.shape} -> {df_encoded.shape}")
+    
+    return df_encoded
 
 def log_transformation(features_data):
 
@@ -242,7 +249,7 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     try:
         if not os.path.exists(file_path) and file_path.endswith('_cleaned.csv'):
             original_file = file_path.replace('_cleaned.csv', '.csv')
-            print(f"Cleaned data not found. Running basic analysis on {original_file}...")
+            print(f"Cleaned data not found. Running basic analysis on {original_file}")
             df_cleaned = basic_analysis(original_file) 
         else:
             print(f"Loading cleaned data from: {file_path}")
@@ -256,14 +263,9 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     if not target_success:
         df_with_target = df_cleaned
 
-    # Skip correlation plots to avoid hanging - just get the matrices
-    print("Calculating correlations...")
-    pearson_corr = df_with_target.select_dtypes(include=[np.number]).corr()
-    spearman_corr = df_with_target.select_dtypes(include=[np.number]).corr(method='spearman')
-    print("Correlations calculated successfully")
+    pearson_corr = analyze_correlations(df_with_target, threshold=correlation_threshold, method='pearson')
+    spearman_corr = analyze_correlations(df_with_target, threshold=correlation_threshold, method='spearman')
 
-    # Feature scaling
-    print("Starting feature scaling...")
     scaling_results = scale_features(df_with_target)
     
     processed_file = None
@@ -271,7 +273,7 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
         print(f"Scaled features: {scaling_results['final_shape']}")
         print(f"Features processed: {len(scaling_results['feature_names'])}")
 
-        processed_file = file_path.replace('.csv', '_fully_processed.csv')
+        processed_file = file_path.replace('.csv', '_final.csv')
         scaling_results['scaled_data'].to_csv(processed_file, index=False)
         print(f"The dataset saved to: {processed_file}")
     
