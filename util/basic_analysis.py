@@ -1,13 +1,8 @@
-import pandas as pd         
-import numpy as np          
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-
-def dual_print(text="", file=None):
-    print(text)  
-    if file:
-        file.write(str(text) + "\n")  
 
 def load_data(file_path):
     """Load and explore the dataset"""
@@ -17,7 +12,6 @@ def load_data(file_path):
     print(df.info())
     print(df.head())
     print(df.describe())
-    
     return df
 
 def assess_data(df):
@@ -26,7 +20,6 @@ def assess_data(df):
     missing_vals = df.isnull().sum()
     if missing_vals.sum() > 0:
         print("Missing values per column:")
-        print(missing_vals[missing_vals > 0])
         
         numerical_cols = df.select_dtypes(include=[np.number]).columns
         for col in numerical_cols:
@@ -38,8 +31,7 @@ def assess_data(df):
         categorical_cols = df.select_dtypes(include=['object']).columns
         for col in categorical_cols:
             if df[col].isnull().sum() > 0:
-                mode_series = df[col].mode()
-                mode_val = mode_series[0] if len(mode_series) > 0 else 'Unknown'
+                mode_val = df[col].mode()[0] if not df[col].mode().empty else 'Unknown'
                 df[col].fillna(mode_val, inplace=True)
                 print(f"  Fixed {col} missing values with mode: {mode_val}")
     else:
@@ -53,47 +45,37 @@ def assess_data(df):
         print(f"Duplicate rows: {duplicates}")
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns
-    
     for col in numeric_cols:
         min_val = df[col].min()
         max_val = df[col].max()
-        print(f"{col}: min={min_val}, max={max_val}")
         
         if col == 'Exposure' and (min_val <= 0 or max_val > 1):
-            print(f"  {col} values outside expected range [0,1]")
             df[col] = df[col].clip(0.001, 1.0)
             print(f"  Fixed: Capped {col} to [0.001, 1.0]")
             
         if col == 'ClaimNb' and min_val < 0:
-            print(f"  {col} has negative values")
             df[col] = df[col].clip(lower=0)
             print(f"  Fixed: Set negative {col} to 0")
             
         if col in ['VehAge', 'DrivAge'] and min_val < 0:
-            print(f"  {col} has negative values")
             df[col] = df[col].abs()
             print(f"  Fixed: Converted negative {col} to absolute values")
 
-def analyze_features(df):
-    """Analyze categorical and numerical features"""
-
+def analyze_features(df, results_dir):
+    """Analyze categorical and numerical features and save plot"""
     categorical_cols = ['Area', 'VehBrand', 'VehGas', 'Region']
-
     for col in categorical_cols:
         if col in df.columns:  
             print(f"\n{col} - Unique values: {df[col].nunique()}")
             print(df[col].value_counts().head())
-        else:
-            print(f"\n{col} - Column not found in dataset (skipped)")
     
     numerical_cols = ['ClaimNb', 'Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
-
     fig, axes = plt.subplots(3, 3, figsize=(15, 12))
     axes = axes.ravel()
 
     for i, col in enumerate(numerical_cols):
         if i < len(axes):
-            axes[i].hist(df[col], bins=50, alpha=0.7)
+            axes[i].hist(df[col], bins=50, alpha=0.7, color='steelblue', edgecolor='white')
             axes[i].set_title(f'Distribution of {col}')
             axes[i].set_xlabel(col)
             axes[i].set_ylabel('Frequency')
@@ -102,13 +84,13 @@ def analyze_features(df):
         fig.delaxes(axes[i])
 
     plt.tight_layout()
-    plt.savefig(os.path.join('..', 'results', 'feature_distributions.png'), dpi=300, bbox_inches='tight')
-    plt.show()
+    save_path = os.path.join(results_dir, 'feature_distributions.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close() 
 
-def detect_outliers(df):
-    """Detect outliers"""
+def detect_outliers(df, results_dir):
+    """Detect outliers and save boxplots"""
     numerical_cols = ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
-    
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
     axes = axes.ravel()
     
@@ -125,49 +107,49 @@ def detect_outliers(df):
         
         outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
         print(f"{col}: {len(outliers)} outliers ({len(outliers)/len(df)*100:.2f}%)")
- 
-        if col == 'Exposure':
-            exposure_issues = df[(df[col] <= 0) | (df[col] > 1)]
-            print(f"  Exposure outside [0,1]: {len(exposure_issues)} records")
     
     plt.tight_layout()
-    plt.savefig(os.path.join('..', 'results', 'outlier_analysis.png'), dpi=300, bbox_inches='tight')
-    plt.show()
+    save_path = os.path.join(results_dir, 'outlier_analysis.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
 
 def run_complete_analysis(file_path):
-    results_dir = os.path.join('..', 'results')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(os.path.dirname(script_dir), 'results')
     os.makedirs(results_dir, exist_ok=True)
     
-    with open(os.path.join(results_dir, 'basic_analysis_results.txt'), 'w') as f:
-        sys.stdout = f
+    log_file_path = os.path.join(results_dir, 'basic_analysis_results.txt')
+    
+    with open(log_file_path, 'w') as f:
+        sys.stdout = f 
         
         print("BASIC DATA ANALYSIS RESULTS")
         print("="*50)
         
         df = load_data(file_path)
         assess_data(df)  
-        analyze_features(df)
-        detect_outliers(df)  
+        analyze_features(df, results_dir)
+        detect_outliers(df, results_dir) 
         
         output_path = file_path.replace('.csv', '_cleaned.csv')
         df.to_csv(output_path, index=False)
-        print(f"Cleaned dataset saved to: {output_path}")
+        print(f"\nCleaned dataset saved to: {output_path}")
         print(f"Final shape: {df.shape}")
         
-        sys.stdout = sys.__stdout__  
-    print(f"Complete results saved to: {os.path.abspath(results_dir)}/basic_analysis_results.txt")
-    print(f"Plots saved to: {os.path.abspath(results_dir)}/ folder")
+        sys.stdout = sys.__stdout__   
+        
+    print(f"Complete results log saved to: {log_file_path}")
+    print(f"Plots saved in: {results_dir}")
     return df
 
 if __name__ == "__main__":
-    file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train.csv"
+    file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\data\claims_train.csv"
     
     try:
         dataset = run_complete_analysis(file_path)
-        print(f"Dataset loaded with shape: {dataset.shape}")
+        print(f"Dataset successfully cleaned. Final shape: {dataset.shape}")
         
     except FileNotFoundError:
         print(f"Error: File '{file_path}' not found!")
- 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"An error occurred: {e}")

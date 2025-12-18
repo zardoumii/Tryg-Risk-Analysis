@@ -35,8 +35,8 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
         os.makedirs(results_dir, exist_ok=True)
         filename = os.path.join(results_dir, f'correlation_matrix_{method}.png')
         plt.savefig(filename, dpi=300, bbox_inches='tight')
+        plt.close()
     
-    plt.show()
     return correlation_matrix
 
 def analyze_target(df, target_col='ClaimFrequency', output_dir=None):
@@ -103,7 +103,6 @@ def _plot_distributions(target, target_col, output_dir):
     results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
     os.makedirs(results_dir, exist_ok=True)
     plt.savefig(os.path.join(results_dir, f'{target_col}_distributions.png'), dpi=300, bbox_inches='tight')
-    plt.show()
 
 def _analyze_risk_factors(df, target_col):
     """Analyze numerical risk factors"""
@@ -282,16 +281,17 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     try:
         from basic_analysis import run_complete_analysis as basic_analysis
     except ImportError:
-        return None
-   
+        print("Warning: basic_analysis module not found.")
+        return None 
+    
     if file_path is None:
-        file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned.csv"
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train_cleaned.csv')
 
     try:
         if not os.path.exists(file_path) and file_path.endswith('_cleaned.csv'):
-            original_file = file_path.replace('_cleaned.csv', '.csv')
+            original_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train.csv')
             print(f"Cleaned data not found. Running basic analysis on {original_file}")
-            df_cleaned = basic_analysis(original_file) 
+            df_cleaned = basic_analysis(original_file)
         else:
             print(f"Loading cleaned data from: {file_path}")
             df_cleaned = pd.read_csv(file_path)

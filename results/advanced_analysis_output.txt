@@ -1,5 +1,4 @@
---- Advanced Analysis Output Start ---
-Loading cleaned data from: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned.csv
+Loading cleaned data from: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\data\claims_train_cleaned.csv
 Loaded cleaned dataset: (542410, 12)
 Created ClaimFrequency = ClaimNb / Exposure
 
@@ -80,7 +79,7 @@ Scaling 7 features
   - 2 excluded features
 Scaled features: (542410, 50)
 Features processed: 7
-The dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned_final.csv
+The dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\data\claims_train_cleaned_final.csv
 Saved scaled feature distributions to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\results\scaled_feature_distributions.png
 Saved scaled feature outlier boxplots to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\results\scaled_feature_outliers.png
 Analysis completed successfully!
