@@ -41,16 +41,7 @@ max    6.114330e+06      11.000000       2.010000  ...     100.000000     230.00
 [8 rows x 8 columns]
 No missing values
 Duplicate rows: 0
-IDpol: min=1.0, max=6114330.0
-ClaimNb: min=0, max=11
-Exposure: min=0.00273224, max=2.01
-  Exposure values outside expected range [0,1]
   Fixed: Capped Exposure to [0.001, 1.0]
-VehPower: min=4, max=15
-VehAge: min=0, max=100
-DrivAge: min=18, max=100
-BonusMalus: min=50, max=230
-Density: min=1, max=27000
 
 Area - Unique values: 6
 Area
@@ -85,11 +76,11 @@ R11     55984
 R53     33643
 Name: count, dtype: int64
 Exposure: 0 outliers (0.00%)
-  Exposure outside [0,1]: 0 records
 VehPower: 27978 outliers (5.16%)
 VehAge: 2460 outliers (0.45%)
 DrivAge: 1034 outliers (0.19%)
 BonusMalus: 49914 outliers (9.20%)
 Density: 62184 outliers (11.46%)
-Cleaned dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned.csv
+
+Cleaned dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\data\claims_train_cleaned.csv
 Final shape: (542410, 12)

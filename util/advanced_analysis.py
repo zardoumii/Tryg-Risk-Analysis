@@ -14,8 +14,9 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
         correlation_matrix = numerical_data.corr(method='spearman')
         title = 'Spearman Correlation Matrix of Numerical Features'
     else:
-        correlation_matrix = numerical_data.corr()
-        title = 'Pearson Correlation Matrix of Numerical Features'
+    if file_path is None:
+        ml_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        file_path = os.path.join(ml_root, 'data', 'claims_train_cleaned.csv')
     
     plt.figure(figsize=(12, 10))
     mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
@@ -285,14 +286,15 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
         return None
    
     if file_path is None:
-        file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train_cleaned.csv"
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train_cleaned.csv')
 
     try:
         if not os.path.exists(file_path) and file_path.endswith('_cleaned.csv'):
-            original_file = file_path.replace('_cleaned.csv', '.csv')
+            original_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train.csv')
             print(f"Cleaned data not found. Running basic analysis on {original_file}")
-            df_cleaned = basic_analysis(original_file) 
+            df_cleaned = basic_analysis(original_file)
         else:
+            file_path = os.path.abspath(file_path)
             print(f"Loading cleaned data from: {file_path}")
             df_cleaned = pd.read_csv(file_path)
             print(f"Loaded cleaned dataset: {df_cleaned.shape}")
