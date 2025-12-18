@@ -62,7 +62,6 @@ def assess_data(df):
             print(f"  Fixed: Converted negative {col} to absolute values")
 
 def analyze_features(df, results_dir):
-    """Analyze categorical and numerical features and save plot"""
     categorical_cols = ['Area', 'VehBrand', 'VehGas', 'Region']
     for col in categorical_cols:
         if col in df.columns:  
@@ -89,7 +88,6 @@ def analyze_features(df, results_dir):
     plt.close() 
 
 def detect_outliers(df, results_dir):
-    """Detect outliers and save boxplots"""
     numerical_cols = ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density']
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
     axes = axes.ravel()
@@ -142,14 +140,3 @@ def run_complete_analysis(file_path):
     print(f"Plots saved in: {results_dir}")
     return df
 
-if __name__ == "__main__":
-    file_path = r"c:\Users\walde\OneDrive - ITU\Documents\Machine learning\data\claims_train.csv"
-    
-    try:
-        dataset = run_complete_analysis(file_path)
-        print(f"Dataset successfully cleaned. Final shape: {dataset.shape}")
-        
-    except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found!")
-    except Exception as e:
-        print(f"An error occurred: {e}")

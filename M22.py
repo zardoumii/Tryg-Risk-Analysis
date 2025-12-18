@@ -192,8 +192,8 @@ def train_and_evaluate_sklearn_ffnn():
     
     # 1. Load the data
     output_lines.append("\n1. Loading data...")
-    train_file = 'data/claims_data_clustered.csv'
-    test_file = 'data/claims_data_test_clustered.csv'
+    train_file = 'data/claims_train_clustered.csv'
+    test_file = 'data/claims_test_clustered.csv'
     
     df_train = pd.read_csv(train_file)
     df_test = pd.read_csv(test_file)
@@ -208,7 +208,7 @@ def train_and_evaluate_sklearn_ffnn():
     # 2. Prepare features and target
     output_lines.append("\n2. Preparing features and target...")
     target_col = 'ClaimFrequency'
-    exclude_cols = [target_col]
+    exclude_cols = [target_col, 'ClaimNb', 'IDpol']
     feature_cols = [col for col in df_train.columns if col not in exclude_cols]
     
     output_lines.append(f"   Number of features: {len(feature_cols)}")

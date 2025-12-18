@@ -333,15 +333,38 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
         'processed_file_path': processed_file
     }
 
-if __name__ == "__main__":
+def advanced_analysis():
     import sys
     results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
     os.makedirs(results_dir, exist_ok=True)
-    output_txt = os.path.join(results_dir, 'advanced_analysis_output.txt')
-    with open(output_txt, 'w') as f:
-        sys.stdout = f
-        complete_results = run_complete_pipeline()
-        print("Analysis completed successfully!")
-    sys.stdout = sys.__stdout__
-    print(f"Analysis completed successfully! Output saved to {output_txt}")
 
+    # Process test data
+    test_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_test_cleaned.csv')
+    output_txt_test = os.path.join(results_dir, 'advanced_analysis_test_output.txt')
+    
+    print("Running complete pipeline on claims_test_cleaned.csv...")
+    with open(output_txt_test, 'w') as f:
+        sys.stdout = f
+        print("="*70)
+        print("TEST DATA ANALYSIS")
+        print("="*70)
+        complete_results_test = run_complete_pipeline(file_path=test_file)
+        print("Test data analysis completed successfully!")
+    sys.stdout = sys.__stdout__
+    print(f"Test analysis completed! Output saved to {output_txt_test}")
+    
+    print("\nBoth analyses completed successfully!")
+# Process training data
+    train_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train_cleaned.csv')
+    output_txt_train = os.path.join(results_dir, 'advanced_analysis_train_output.txt')
+    
+    print("Running complete pipeline on claims_train_cleaned.csv...")
+    with open(output_txt_train, 'w') as f:
+        sys.stdout = f
+        print("="*70)
+        print("TRAINING DATA ANALYSIS")
+        print("="*70)
+        complete_results_train = run_complete_pipeline(file_path=train_file)
+        print("Training data analysis completed successfully!")
+    sys.stdout = sys.__stdout__
+    print(f"Training analysis completed! Output saved to {output_txt_train}")
