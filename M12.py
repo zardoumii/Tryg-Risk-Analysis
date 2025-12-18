@@ -1,7 +1,3 @@
-"""
-Decision Tree Regressor - sklearn Implementation
-Reference implementation for validation
-"""
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -11,10 +7,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 def load_and_prepare_data():
-    """Load and prepare the claims data - creates ClaimFrequency from ClaimNb/Exposure"""
     data_path = Path('data')
     
-    # Load CSV files
     train_file = data_path / 'claims_train_cleaned.csv'
     test_file = data_path / 'claims_test_cleaned.csv'
     
@@ -26,29 +20,21 @@ def load_and_prepare_data():
     
     output_lines.append(f"Loaded {len(df_train)} training samples and {len(df_test)} test samples")
     
-    # 1. Create the Target (y) - WE KEEP THE ANSWER HERE
     y_train = (df_train['ClaimNb'] / df_train['Exposure']).values
     y_test = (df_test['ClaimNb'] / df_test['Exposure']).values
     
-    # 2. Create the Features (X) - WE REMOVE THE ANSWER HERE
-    # We must drop 'ClaimNb' because it reveals the answer
     drop_cols = ['ClaimFrequency', 'ClaimNb', 'IDpol']
     
-    # Define categorical features
     categorical_cols = ['Area', 'VehBrand', 'VehGas', 'Region']
     
-    # This list of names is used for BOTH X_train and X_test
     feature_names = [c for c in df_train.columns if c not in drop_cols]
     
-    # Separate categorical and numerical features
     categorical_features = [f for f in feature_names if f in categorical_cols]
     numerical_features = [f for f in feature_names if f not in categorical_cols]
     
-    # Get data
     X_train = df_train[feature_names].copy()
     X_test = df_test[feature_names].copy()
     
-    # Encode categorical features
     label_encoders = {}
     for col in categorical_features:
         le = LabelEncoder()
@@ -56,7 +42,6 @@ def load_and_prepare_data():
         X_test[col] = le.transform(X_test[col].astype(str))
         label_encoders[col] = le
     
-    # Convert to numpy arrays
     X_train = X_train.values.astype(float)
     X_test = X_test.values.astype(float)
     
@@ -72,7 +57,6 @@ def load_and_prepare_data():
 
 
 def evaluate_model(y_true, y_pred, dataset_name=""):
-    """Calculate evaluation metrics and return as strings"""
     mse = mean_squared_error(y_true, y_pred)
     rmse = np.sqrt(mse)
     mae = mean_absolute_error(y_true, y_pred)
@@ -89,14 +73,12 @@ def evaluate_model(y_true, y_pred, dataset_name=""):
 
 
 def train_and_evaluate_sklearn_tree():
-    """Train and evaluate sklearn Decision Tree model - can be called from other scripts"""
     output_lines = []
     
     output_lines.append("=" * 50)
     output_lines.append("Decision Tree Regressor - sklearn Implementation")
     output_lines.append("=" * 50)
     
-    # Load and prepare data
     X_train, X_test, y_train, y_test, feature_names, load_lines = load_and_prepare_data()
     output_lines.extend(load_lines)
     
@@ -104,7 +86,6 @@ def train_and_evaluate_sklearn_tree():
     output_lines.append("Training sklearn Decision Tree Regressor...")
     output_lines.append("=" * 50)
     
-    # Initialize and train the model
     model = DecisionTreeRegressor(
         max_depth=5,
         min_samples_split=200,
@@ -119,17 +100,14 @@ def train_and_evaluate_sklearn_tree():
     output_lines.append(f"  random_state: {model.random_state}")
     output_lines.append(f"\nTraining on full dataset: {len(X_train)} samples")
     
-    # Train the model
     output_lines.append("\nFitting model...")
     model.fit(X_train, y_train)
     output_lines.append("Model trained successfully!")
     
-    # Make predictions
     output_lines.append("\nMaking predictions...")
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
     
-    # Evaluate
     output_lines.append("\n" + "=" * 50)
     output_lines.append("Evaluation Metrics")
     output_lines.append("=" * 50)
@@ -140,7 +118,6 @@ def train_and_evaluate_sklearn_tree():
     mse_test, rmse_test, mae_test, r2_test, test_lines = evaluate_model(y_test, y_pred_test, "Test Set")
     output_lines.extend(test_lines)
     
-    # Show some sample predictions
     output_lines.append("\n" + "=" * 50)
     output_lines.append("Sample Predictions (first 10 test samples)")
     output_lines.append("=" * 50)
@@ -154,7 +131,6 @@ def train_and_evaluate_sklearn_tree():
     output_lines.append("Training Complete!")
     output_lines.append("=" * 50)
     
-    # Additional details for file
     output_lines.append("\n" + "=" * 50)
     output_lines.append("Detailed Results")
     output_lines.append("=" * 50)
@@ -172,7 +148,6 @@ def train_and_evaluate_sklearn_tree():
     output_lines.append(f"  min_samples_leaf: {model.min_samples_leaf}")
     output_lines.append(f"  random_state: {model.random_state}")
     
-    # Feature importance
     output_lines.append("\nTop 10 Feature Importances:")
     feature_importance = sorted(zip(feature_names, model.feature_importances_), 
                                 key=lambda x: x[1], reverse=True)
@@ -196,7 +171,6 @@ def train_and_evaluate_sklearn_tree():
     output_lines.append(f"Training actuals - Mean: {y_train.mean():.4f}, Std: {y_train.std():.4f}")
     output_lines.append(f"Test actuals - Mean: {y_test.mean():.4f}, Std: {y_test.std():.4f}")
     
-    # Save results to file
     results_dir = Path('results')
     results_dir.mkdir(exist_ok=True)
     

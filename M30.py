@@ -1,8 +1,3 @@
-"""
-Final Model: Robust Gradient Boosting (MAE Loss)
-Fixed to prevent gradient explosion from outliers
-"""
-
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -15,7 +10,6 @@ def train_final_champion_model_robust():
     print("Training FINAL CHAMPION: Robust Gradient Boosting (MAE Loss)")
     print("=" * 80)
 
-    # 1. Load Data
     print("\n1. Loading data...")
     train_file = 'data/claims_data_clustered.csv'
     test_file = 'data/claims_data_test_clustered.csv'
@@ -32,20 +26,15 @@ def train_final_champion_model_robust():
     X_test = df_test[feature_cols].values
     y_test = df_test[target_col].values
     
-    # SAFETY CHECK: Clip training target outliers to stabilize training
-    # Anyone with > 20 claims is capped at 20 for training purposes.
-    # This prevents the "732" outlier from breaking the model.
     y_train_clipped = np.clip(y_train, 0, 20)
     print(f"   Note: Clipped training target max to 20 (True Max: {y_train.max()}) to prevent explosion.")
 
-    # 2. Define the Model
-    # CHANGED: loss='absolute_error' (Robust) instead of 'poisson' (Unstable)
     print("\n2. Initializing HistGradientBoostingRegressor...")
     
     model = HistGradientBoostingRegressor(
-        loss='absolute_error',   # <--- ROBUST LOSS (Minimizes MAE, ignores outliers)
-        learning_rate=0.1,       # Standard learning rate
-        max_iter=300,            # Moderate trees
+        loss='absolute_error',
+        learning_rate=0.1,
+        max_iter=300,
         max_leaf_nodes=31,       
         l2_regularization=0.5,   
         early_stopping=True,     
@@ -54,18 +43,14 @@ def train_final_champion_model_robust():
         verbose=1
     )
 
-    # 3. Train
     print("\n3. Training...")
     model.fit(X_train, y_train_clipped)
 
-    # 4. Predict
     print("\n4. Predicting...")
     y_pred = model.predict(X_test)
     
-    # Enforce non-negativity
-    y_pred = np.maximum(0, y_pred) 
+    y_pred = np.maximum(0, y_pred)
 
-    # 5. Evaluate
     print("\n5. Evaluation:")
     r2 = r2_score(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
@@ -78,7 +63,6 @@ def train_final_champion_model_robust():
     print(f"   MAE:      {mae:.6f}")
     print("-" * 40)
 
-    # 6. Save
     os.makedirs('results', exist_ok=True)
     os.makedirs('models', exist_ok=True)
     
