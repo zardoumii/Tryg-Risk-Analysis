@@ -3,7 +3,7 @@ Decision Tree Regressor Implementation from Scratch
 Using only NumPy and standard Python libraries
 Handles both numerical and categorical features
 """
-
+import pandas as pd
 import numpy as np
 from pathlib import Path
 from collections import Counter
@@ -71,31 +71,36 @@ class DecisionTreeRegressor:
         return parent_variance - child_variance
     
     def _best_split_numerical(self, X_column, y):
-        """Find best split for numerical feature"""
+        """Find best split using percentiles (Optimized)"""
         best_gain = -float('inf')
         best_threshold = None
-        
-        # Get unique values as potential split points
-        unique_values = np.unique(X_column)
-        
-        # Try splits between consecutive unique values
-        for i in range(len(unique_values) - 1):
-            threshold = (unique_values[i] + unique_values[i + 1]) / 2
-            
+    
+    # OPTIMIZATION: Instead of all unique values, check percentiles (e.g., 10 split points)
+    # This limits the loop to ~10 iterations regardless of data size.
+        n_splits = 10
+        if len(X_column) < 100:
+        # For small nodes, fallback to unique values
+            thresholds = np.unique(X_column)
+        else:
+        # For large nodes, use percentiles
+            percentiles = np.linspace(0, 100, n_splits + 2)[1:-1]
+            thresholds = np.unique(np.percentile(X_column, percentiles))
+    
+        for threshold in thresholds:
+        # Boolean masking is fast in NumPy
             left_mask = X_column <= threshold
             right_mask = ~left_mask
-            
-            # Check minimum samples constraint
+        
+        # Fast-fail: check size constraints before variance calculation
             if np.sum(left_mask) < self.min_samples_leaf or np.sum(right_mask) < self.min_samples_leaf:
                 continue
-            
-            # Calculate variance reduction
+        
             gain = self._variance_reduction(y, y[left_mask], y[right_mask])
-            
+        
             if gain > best_gain:
                 best_gain = gain
                 best_threshold = threshold
-        
+            
         return best_gain, best_threshold
     
     def _best_split_categorical(self, X_column, y):
@@ -123,7 +128,7 @@ class DecisionTreeRegressor:
         for i in range(1, len(sorted_categories)):
             categories_left = set(sorted_categories[:i])
             
-            left_mask = np.array([x in categories_left for x in X_column])
+            left_mask = np.isin(X_column, list(categories_left))
             right_mask = ~left_mask
             
             # Check minimum samples constraint
@@ -271,67 +276,50 @@ class DecisionTreeRegressor:
 
 
 def load_and_prepare_data():
-    """Load and prepare the claims data"""
+    """Load and prepare the claims data - creates ClaimFrequency from ClaimNb/Exposure"""
+    import pandas as pd
+    
     data_path = Path('data')
     
-    # Load CSV files
-    train_file = data_path / 'claims_train.csv'
-    test_file = data_path / 'claims_test.csv'
+    # Load CSV files with pandas for easier handling
+    train_file = data_path / 'claims_train_cleaned.csv'
+    test_file = data_path / 'claims_test_cleaned.csv'
     
-    print("Loading data...")
-    train_data = []
-    with open(train_file, 'r') as f:
-        header = f.readline().strip().split(',')
-        for line in f:
-            train_data.append(line.strip().split(','))
+    output_lines = []
+    output_lines.append("Loading data...")
     
-    test_data = []
-    with open(test_file, 'r') as f:
-        f.readline()  # Skip header
-        for line in f:
-            test_data.append(line.strip().split(','))
+    df_train = pd.read_csv(train_file)
+    df_test = pd.read_csv(test_file)
     
-    print(f"Loaded {len(train_data)} training samples and {len(test_data)} test samples")
+    output_lines.append(f"Loaded {len(df_train)} training samples and {len(df_test)} test samples")
     
-    # Convert to numpy arrays
-    train_array = np.array(train_data)
-    test_array = np.array(test_data)
+    # 1. Create the Target (y) - WE KEEP THE ANSWER HERE
+    y_train = df_train['ClaimNb'] / df_train['Exposure']
+    y_test = df_test['ClaimNb'] / df_test['Exposure']
     
-    # Define column information
-    feature_names = header[1:]  # Skip IDpol
-    claim_nb_idx = feature_names.index('ClaimNb')
-    exposure_idx = feature_names.index('Exposure')
+    # 2. Create the Features (X) - WE REMOVE THE ANSWER HERE
+    # We must drop 'ClaimNb' because it reveals the answer
+    drop_cols = ['ClaimFrequency', 'ClaimNb', 'IDpol']
     
-    # Define categorical and numerical features
+    # Define categorical features
     categorical_cols = ['Area', 'VehBrand', 'VehGas', 'Region']
     
-    # Prepare data
-    X_train = train_array[:, 1:]  # Skip IDpol
-    X_test = test_array[:, 1:]    # Skip IDpol
+    # This list of names is used for BOTH X_train and X_test
+    feature_names = [c for c in df_train.columns if c not in drop_cols]
     
-    # Extract target as claim frequency (ClaimNb / Exposure)
-    claim_nb_train = X_train[:, claim_nb_idx].astype(float)
-    exposure_train = X_train[:, exposure_idx].astype(float)
-    claim_nb_test = X_test[:, claim_nb_idx].astype(float)
-    exposure_test = X_test[:, exposure_idx].astype(float)
+    # Create X arrays using only the "safe" feature_names
+    X_train = df_train[feature_names].values
+    X_test = df_test[feature_names].values
     
-    # Calculate claim frequency, avoiding division by zero
-    y_train = np.where(exposure_train > 0, claim_nb_train / exposure_train, 0)
-    y_test = np.where(exposure_test > 0, claim_nb_test / exposure_test, 0)
-    
-    # Remove ClaimNb from features (but keep Exposure as it's a predictor)
-    feature_indices = [i for i in range(len(feature_names)) if i != claim_nb_idx]
-    X_train = X_train[:, feature_indices]
-    X_test = X_test[:, feature_indices]
-    feature_names = [feature_names[i] for i in feature_indices]
+    # Convert to numpy arrays
+    y_train = y_train.values
+    y_test = y_test.values
     
     # Create feature types list
     feature_types = ['categorical' if name in categorical_cols else 'numerical' 
                      for name in feature_names]
     
-    # Process features
-    # For numerical features, convert to float
-    # For categorical features, keep as strings but in object array
+    # Convert features to appropriate types
     X_train_list = []
     X_test_list = []
     
@@ -340,30 +328,30 @@ def load_and_prepare_data():
             X_train_list.append(X_train[:, i].astype(float))
             X_test_list.append(X_test[:, i].astype(float))
         else:  # categorical
-            X_train_list.append(X_train[:, i])
-            X_test_list.append(X_test[:, i])
+            X_train_list.append(X_train[:, i].astype(str))
+            X_test_list.append(X_test[:, i].astype(str))
     
     # Stack with object dtype to preserve mixed types
-    X_train = np.empty((len(train_data), len(feature_names)), dtype=object)
-    X_test = np.empty((len(test_data), len(feature_names)), dtype=object)
+    X_train = np.empty((len(df_train), len(feature_names)), dtype=object)
+    X_test = np.empty((len(df_test), len(feature_names)), dtype=object)
     
     for i in range(len(feature_names)):
         X_train[:, i] = X_train_list[i]
         X_test[:, i] = X_test_list[i]
     
-    print(f"\nFeatures: {feature_names}")
-    print(f"Categorical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'categorical']}")
-    print(f"Numerical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'numerical']}")
-    print(f"\nTarget variable: Claim Frequency (ClaimNb / Exposure)")
-    print(f"Training target range: [{y_train.min():.4f}, {y_train.max():.4f}]")
-    print(f"Training target mean: {y_train.mean():.4f}")
-    print(f"Non-zero claims: {np.sum(y_train > 0)} ({100 * np.sum(y_train > 0) / len(y_train):.2f}%)")
+    output_lines.append(f"\nFeatures: {feature_names}")
+    output_lines.append(f"Categorical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'categorical']}")
+    output_lines.append(f"Numerical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'numerical']}")
+    output_lines.append(f"\nTarget variable: ClaimFrequency")
+    output_lines.append(f"Training target range: [{y_train.min():.4f}, {y_train.max():.4f}]")
+    output_lines.append(f"Training target mean: {y_train.mean():.4f}")
+    output_lines.append(f"Non-zero claims: {np.sum(y_train > 0)} ({100 * np.sum(y_train > 0) / len(y_train):.2f}%)")
     
-    return X_train, X_test, y_train, y_test, feature_names, feature_types
+    return X_train, X_test, y_train, y_test, feature_names, feature_types, output_lines
 
 
 def evaluate_model(y_true, y_pred, dataset_name=""):
-    """Calculate and print evaluation metrics"""
+    """Calculate evaluation metrics and return as strings"""
     mse = np.mean((y_true - y_pred) ** 2)
     rmse = np.sqrt(mse)
     mae = np.mean(np.abs(y_true - y_pred))
@@ -373,132 +361,130 @@ def evaluate_model(y_true, y_pred, dataset_name=""):
     ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
     r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
     
-    print(f"\n{dataset_name} Results:")
-    print(f"  MSE:  {mse:.6f}")
-    print(f"  RMSE: {rmse:.6f}")
-    print(f"  MAE:  {mae:.6f}")
-    print(f"  R²:   {r2:.6f}")
+    output_lines = []
+    output_lines.append(f"\n{dataset_name} Results:")
+    output_lines.append(f"  MSE:  {mse:.6f}")
+    output_lines.append(f"  RMSE: {rmse:.6f}")
+    output_lines.append(f"  MAE:  {mae:.6f}")
+    output_lines.append(f"  R²:   {r2:.6f}")
     
-    return mse, rmse, mae, r2
+    return mse, rmse, mae, r2, output_lines
 
-
-if __name__ == "__main__":
-    print("=" * 70)
-    print("Decision Tree Regressor - From Scratch Implementation")
-    print("=" * 70)
+def train_and_evaluate_decision_tree():
+    """Train and evaluate Decision Tree model - can be called from other scripts"""
+    output_lines = []
+    
+    output_lines.append("=" * 70)
+    output_lines.append("Decision Tree Regressor - From Scratch Implementation")
+    output_lines.append("=" * 70)
     
     # Load and prepare data
-    X_train, X_test, y_train, y_test, feature_names, feature_types = load_and_prepare_data()
+    X_train, X_test, y_train, y_test, feature_names, feature_types, load_lines = load_and_prepare_data()
+    output_lines.extend(load_lines)
     
-    print("\n" + "=" * 70)
-    print("Training Decision Tree Regressor...")
-    print("=" * 70)
+    output_lines.append("\n" + "=" * 70)
+    output_lines.append("Training Decision Tree Regressor...")
+    output_lines.append("=" * 70)
     
-    # Initialize and train the model
+    # Initialize and train the model with reduced complexity for speed
     model = DecisionTreeRegressor(
-        max_depth=8,
-        min_samples_split=50,
-        min_samples_leaf=20
+        max_depth=5,
+        min_samples_split=200,
+        min_samples_leaf=100
     )
     
-    print(f"\nModel parameters:")
-    print(f"  max_depth: {model.max_depth}")
-    print(f"  min_samples_split: {model.min_samples_split}")
-    print(f"  min_samples_leaf: {model.min_samples_leaf}")
+    output_lines.append(f"\nModel parameters:")
+    output_lines.append(f"  max_depth: {model.max_depth}")
+    output_lines.append(f"  min_samples_split: {model.min_samples_split}")
+    output_lines.append(f"  min_samples_leaf: {model.min_samples_leaf}")
+    output_lines.append(f"\nTraining on full dataset: {len(X_train)} samples")
     
     # Train the model
-    print("\nFitting model...")
+    output_lines.append("\nFitting model...")
     model.fit(X_train, y_train, feature_names=feature_names, feature_types=feature_types)
-    print("Model trained successfully!")
+    output_lines.append("Model trained successfully!")
     
     # Make predictions
-    print("\nMaking predictions...")
+    output_lines.append("\nMaking predictions...")
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
     
     # Evaluate
-    print("\n" + "=" * 70)
-    print("Evaluation Metrics")
-    print("=" * 70)
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Evaluation Metrics")
+    output_lines.append("=" * 50)
     
-    mse_train, rmse_train, mae_train, r2_train = evaluate_model(y_train, y_pred_train, "Training Set")
-    mse_test, rmse_test, mae_test, r2_test = evaluate_model(y_test, y_pred_test, "Test Set")
+    mse_train, rmse_train, mae_train, r2_train, train_lines = evaluate_model(y_train, y_pred_train, "Training Set")
+    output_lines.extend(train_lines)
+    
+    mse_test, rmse_test, mae_test, r2_test, test_lines = evaluate_model(y_test, y_pred_test, "Test Set")
+    output_lines.extend(test_lines)
     
     # Show some sample predictions
-    print("\n" + "=" * 70)
-    print("Sample Predictions (first 10 test samples)")
-    print("=" * 70)
-    print(f"{'Actual':<10} {'Predicted':<10} {'Error':<10}")
-    print("-" * 30)
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Sample Predictions (first 10 test samples)")
+    output_lines.append("=" * 50)
+    output_lines.append(f"{'Actual':<10} {'Predicted':<10} {'Error':<10}")
+    output_lines.append("-" * 30)
     for i in range(min(10, len(y_test))):
         error = abs(y_test[i] - y_pred_test[i])
-        print(f"{y_test[i]:<10.2f} {y_pred_test[i]:<10.4f} {error:<10.4f}")
+        output_lines.append(f"{y_test[i]:<10.2f} {y_pred_test[i]:<10.4f} {error:<10.4f}")
     
-    print("\n" + "=" * 70)
-    print("Training Complete!")
-    print("=" * 70)
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Training Complete!")
+    output_lines.append("=" * 50)
+    
+    # Additional details for file
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Detailed Results")
+    output_lines.append("=" * 50)
+    output_lines.append(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    output_lines.append("\nDataset Information:")
+    output_lines.append(f"  Training samples: {len(y_train)}")
+    output_lines.append(f"  Test samples: {len(y_test)}")
+    output_lines.append(f"  Features: {len(feature_names)}")
+    output_lines.append(f"  Feature names: {feature_names}")
+    output_lines.append(f"  Categorical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'categorical']}")
+    output_lines.append(f"  Numerical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'numerical']}")
+    
+    output_lines.append("\nModel Hyperparameters:")
+    output_lines.append(f"  max_depth: {model.max_depth}")
+    output_lines.append(f"  min_samples_split: {model.min_samples_split}")
+    output_lines.append(f"  min_samples_leaf: {model.min_samples_leaf}")
+    
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Sample Predictions (first 20 test samples):")
+    output_lines.append("=" * 50)
+    output_lines.append(f"{'Index':<8} {'Actual':<12} {'Predicted':<12} {'Error':<12}")
+    output_lines.append("-" * 48)
+    for i in range(min(20, len(y_test))):
+        error = abs(y_test[i] - y_pred_test[i])
+        output_lines.append(f"{i:<8} {y_test[i]:<12.4f} {y_pred_test[i]:<12.4f} {error:<12.4f}")
+    
+    output_lines.append("\n" + "=" * 50)
+    output_lines.append("Summary Statistics:")
+    output_lines.append("=" * 50)
+    output_lines.append(f"Training predictions - Mean: {y_pred_train.mean():.4f}, Std: {y_pred_train.std():.4f}")
+    output_lines.append(f"Test predictions - Mean: {y_pred_test.mean():.4f}, Std: {y_pred_test.std():.4f}")
+    output_lines.append(f"Training actuals - Mean: {y_train.mean():.4f}, Std: {y_train.std():.4f}")
+    output_lines.append(f"Test actuals - Mean: {y_test.mean():.4f}, Std: {y_test.std():.4f}")
     
     # Save results to file
     results_dir = Path('results')
     results_dir.mkdir(exist_ok=True)
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_file = results_dir / f'model1_results_{timestamp}.txt'
-    
-    print(f"\nSaving results to: {results_file}")
+    results_file = results_dir / 'decision_tree_results.txt'
     
     with open(results_file, 'w') as f:
-        f.write("=" * 70 + "\n")
-        f.write("Decision Tree Regressor - Results\n")
-        f.write("=" * 70 + "\n\n")
-        f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        
-        f.write("Dataset Information:\n")
-        f.write(f"  Training samples: {len(y_train)}\n")
-        f.write(f"  Test samples: {len(y_test)}\n")
-        f.write(f"  Features: {len(feature_names)}\n")
-        f.write(f"  Feature names: {feature_names}\n")
-        f.write(f"  Categorical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'categorical']}\n")
-        f.write(f"  Numerical features: {[name for name, ftype in zip(feature_names, feature_types) if ftype == 'numerical']}\n\n")
-        
-        f.write("Target Variable: Claim Frequency (ClaimNb / Exposure)\n")
-        f.write(f"  Training target range: [{y_train.min():.4f}, {y_train.max():.4f}]\n")
-        f.write(f"  Training target mean: {y_train.mean():.4f}\n")
-        f.write(f"  Non-zero claims: {np.sum(y_train > 0)} ({100 * np.sum(y_train > 0) / len(y_train):.2f}%)\n\n")
-        
-        f.write("Model Hyperparameters:\n")
-        f.write(f"  max_depth: {model.max_depth}\n")
-        f.write(f"  min_samples_split: {model.min_samples_split}\n")
-        f.write(f"  min_samples_leaf: {model.min_samples_leaf}\n\n")
-        
-        f.write("=" * 70 + "\n")
-        f.write("Training Set Results:\n")
-        f.write(f"  MSE:  {mse_train:.6f}\n")
-        f.write(f"  RMSE: {rmse_train:.6f}\n")
-        f.write(f"  MAE:  {mae_train:.6f}\n")
-        f.write(f"  R²:   {r2_train:.6f}\n\n")
-        
-        f.write("Test Set Results:\n")
-        f.write(f"  MSE:  {mse_test:.6f}\n")
-        f.write(f"  RMSE: {rmse_test:.6f}\n")
-        f.write(f"  MAE:  {mae_test:.6f}\n")
-        f.write(f"  R²:   {r2_test:.6f}\n\n")
-        
-        f.write("=" * 70 + "\n")
-        f.write("Sample Predictions (first 20 test samples):\n")
-        f.write("=" * 70 + "\n")
-        f.write(f"{'Index':<8} {'Actual':<12} {'Predicted':<12} {'Error':<12}\n")
-        f.write("-" * 48 + "\n")
-        for i in range(min(20, len(y_test))):
-            error = abs(y_test[i] - y_pred_test[i])
-            f.write(f"{i:<8} {y_test[i]:<12.4f} {y_pred_test[i]:<12.4f} {error:<12.4f}\n")
-        
-        f.write("\n" + "=" * 70 + "\n")
-        f.write("Summary Statistics:\n")
-        f.write("=" * 70 + "\n")
-        f.write(f"Training predictions - Mean: {y_pred_train.mean():.4f}, Std: {y_pred_train.std():.4f}\n")
-        f.write(f"Test predictions - Mean: {y_pred_test.mean():.4f}, Std: {y_pred_test.std():.4f}\n")
-        f.write(f"Training actuals - Mean: {y_train.mean():.4f}, Std: {y_train.std():.4f}\n")
-        f.write(f"Test actuals - Mean: {y_test.mean():.4f}, Std: {y_test.std():.4f}\n")
+        f.write('\n'.join(output_lines))
     
+    print(f"Training report saved to: {results_file}")
+    
+    return model, y_test, y_pred_test
+
+
+if __name__ == "__main__":
+    # Train and evaluate the decision tree model
+    model, y_test, y_pred_test = train_and_evaluate_decision_tree()
     print(f"Results saved successfully!")

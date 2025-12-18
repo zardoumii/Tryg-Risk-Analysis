@@ -416,7 +416,7 @@ class FeedForwardNeuralNetwork:
         print(f"Model loaded from {filepath}")
 
 
-def train_and_evaluate_custom_model():
+def train_and_evaluate_custom_ffnn():
     """
     Train and evaluate the custom FFNN model on insurance claims data
     """
@@ -619,4 +619,4 @@ def train_and_evaluate_custom_model():
 
 if __name__ == "__main__":
     # Train and evaluate the custom model
-    model, y_test, y_test_pred = train_and_evaluate_custom_model()
+    model, y_test, y_test_pred = train_and_evaluate_custom_ffnn()

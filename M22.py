@@ -179,7 +179,7 @@ class SKLearnFFNNRegressor:
         return model
 
 
-def train_and_evaluate_sklearn_model():
+def train_and_evaluate_sklearn_ffnn():
     """
     Train and evaluate the sklearn FFNN model on insurance claims data
     """
@@ -367,4 +367,4 @@ def train_and_evaluate_sklearn_model():
 
 if __name__ == "__main__":
     # Train and evaluate the sklearn model
-    model, y_test, y_test_pred = train_and_evaluate_sklearn_model()
+    model, y_test, y_test_pred = train_and_evaluate_sklearn_ffnn()
