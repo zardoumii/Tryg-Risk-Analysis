@@ -14,9 +14,8 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
         correlation_matrix = numerical_data.corr(method='spearman')
         title = 'Spearman Correlation Matrix of Numerical Features'
     else:
-    if file_path is None:
-        ml_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        file_path = os.path.join(ml_root, 'data', 'claims_train_cleaned.csv')
+        correlation_matrix = numerical_data.corr()
+        title = 'Pearson Correlation Matrix of Numerical Features'
     
     plt.figure(figsize=(12, 10))
     mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
@@ -36,8 +35,8 @@ def analyze_correlations(df, threshold=0.3, method='pearson', save_plot=True):
         os.makedirs(results_dir, exist_ok=True)
         filename = os.path.join(results_dir, f'correlation_matrix_{method}.png')
         plt.savefig(filename, dpi=300, bbox_inches='tight')
+        plt.close()
     
-    plt.show()
     return correlation_matrix
 
 def analyze_target(df, target_col='ClaimFrequency', output_dir=None):
@@ -104,7 +103,6 @@ def _plot_distributions(target, target_col, output_dir):
     results_dir = os.path.join(os.path.dirname(__file__), '..', 'results')
     os.makedirs(results_dir, exist_ok=True)
     plt.savefig(os.path.join(results_dir, f'{target_col}_distributions.png'), dpi=300, bbox_inches='tight')
-    plt.show()
 
 def _analyze_risk_factors(df, target_col):
     """Analyze numerical risk factors"""
@@ -283,8 +281,9 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
     try:
         from basic_analysis import run_complete_analysis as basic_analysis
     except ImportError:
-        return None
-   
+        print("Warning: basic_analysis module not found.")
+        return None 
+    
     if file_path is None:
         file_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'claims_train_cleaned.csv')
 
@@ -294,7 +293,6 @@ def run_complete_pipeline(file_path=None, correlation_threshold=0.3):
             print(f"Cleaned data not found. Running basic analysis on {original_file}")
             df_cleaned = basic_analysis(original_file)
         else:
-            file_path = os.path.abspath(file_path)
             print(f"Loading cleaned data from: {file_path}")
             df_cleaned = pd.read_csv(file_path)
             print(f"Loaded cleaned dataset: {df_cleaned.shape}")

@@ -1,3 +1,85 @@
-Cleaned data not found. Running basic analysis on c:\Users\walde\OneDrive - ITU\Documents\Machine learning\Project\claims_train.csv
-Error loading data: [Errno 2] No such file or directory: 'c:\\Users\\walde\\OneDrive - ITU\\Documents\\Machine learning\\Project\\claims_train.csv'
+Loading cleaned data from: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\data\claims_train_cleaned.csv
+Loaded cleaned dataset: (542410, 12)
+Created ClaimFrequency = ClaimNb / Exposure
+
+ ClaimFrequency Summary Statistics 
+Mean: 0.2612
+Std: 4.4281
+Range: 0.0000 - 732.0000
+Skewness: 58.7904
+Kurtosis: 4919.5649
+Zero ClaimFrequency: 515199 (94.98%)
+
+VehAge quartile analysis:
+   (-0.001, 2.0]: 0.4567
+   (2.0, 6.0]: 0.1974
+   (6.0, 11.0]: 0.2057
+   (11.0, 100.0]: 0.1535
+
+DrivAge quartile analysis:
+   (17.999, 34.0]: 0.2769
+   (34.0, 44.0]: 0.2451
+   (44.0, 55.0]: 0.2758
+   (55.0, 100.0]: 0.2451
+
+BonusMalus quartile analysis:
+   (49.999, 64.0]: 0.2345
+   (64.0, 230.0]: 0.3414
+
+VehPower quartile analysis:
+   (3.999, 5.0]: 0.2827
+   (5.0, 6.0]: 0.2472
+   (6.0, 7.0]: 0.2501
+   (7.0, 15.0]: 0.2508
+
+Top 5 Region by average ClaimFrequency:
+   R21: 0.6304
+   R43: 0.5263
+   R11: 0.3916
+   R22: 0.3815
+   R94: 0.3488
+
+Top 5 VehBrand by average ClaimFrequency:
+   B12: 0.4794
+   B3: 0.2465
+   B10: 0.2141
+   B13: 0.2127
+   B5: 0.2106
+
+Top 5 VehGas by average ClaimFrequency:
+   Regular: 0.3092
+   Diesel: 0.2112
+
+Top 5 Area by average ClaimFrequency:
+   F: 0.3880
+   E: 0.2945
+   D: 0.2781
+   B: 0.2458
+   C: 0.2414
+
+Top correlations with ClaimFrequency:
+   ClaimNb: 0.2635
+   BonusMalus: 0.0139
+   Density: 0.0059
+   VehPower: -0.0014
+   DrivAge: -0.0033
+   VehAge: -0.0240
+   Exposure: -0.0527
+   IDpol: -0.0551
+Applied log transformation to: ['Exposure', 'VehPower', 'VehAge', 'DrivAge', 'BonusMalus', 'Density', 'ClaimFrequency']
+Encoding categorical features: ['Area', 'VehBrand', 'VehGas', 'Region']
+  Area: 6 categories -> 6 binary features
+  VehBrand: 11 categories -> 11 binary features
+  VehGas: 2 categories -> 2 binary features
+  Region: 22 categories -> 22 binary features
+Encoded 4 categorical features -> 41 binary features
+Dataset shape: (542410, 13) -> (542410, 50)
+Scaling 7 features
+  - 41 one-hot encoded features
+  - 2 excluded features
+Scaled features: (542410, 50)
+Features processed: 7
+The dataset saved to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\data\claims_train_cleaned_final.csv
+Saved scaled feature distributions to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\results\scaled_feature_distributions.png
+Saved scaled feature outlier boxplots to: c:\Users\walde\OneDrive - ITU\Documents\Machine learning\util\..\results\scaled_feature_outliers.png
 Analysis completed successfully!
